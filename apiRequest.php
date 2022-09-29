@@ -44,7 +44,6 @@ class TwitterApiRequest
      * @access private
      */
     private $bToken = "";
-
     /**
      * Constructor de la clase, inicializa la sesión cURL
      */
@@ -53,11 +52,7 @@ class TwitterApiRequest
         $this->initSession();
         $this->optionsArray = [
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_CUSTOMREQUEST => "GET",
             CURLOPT_TIMEOUT => 30,
-            CURLOPT_HTTPHEADER => [
-                "Authorization: Bearer $this->bToken"
-            ],
         ];
     }
 
@@ -79,14 +74,32 @@ class TwitterApiRequest
 
     /**
      * Configura múltiples opciones para una transferencia cURL
+     * @param $url API url endpoint
+     * @param $method método HTTP
      */
     public function setArrayOptions($url, $method)
     {
         $this->url = $url;
         $this->method = $method;
         curl_setopt($this->handle, CURLOPT_URL, $url);
-        if ($method == "POST") curl_setopt($this->handle, CURLOPT_POST, true);
+        $this->setMethod($method);
         curl_setopt_array($this->handle, $this->optionsArray);
+    }
+
+    /**
+     * Establece el tipo de método para la petición HTTP a la API
+     * @param $method método HTTP
+     * @access private
+     */
+    private function setMethod($method)
+    {
+        if ($method == "POST") {
+            curl_setopt($this->handle, CURLOPT_POST, true);
+            curl_setopt($this->handle, CURLOPT_HTTPHEADER, ["Authorization: Bearer $this->bToken"]);
+        } else if ($method == "GET") {
+            curl_setopt($this->handle, CURLOPT_CUSTOMREQUEST, "GET");
+            curl_setopt($this->handle, CURLOPT_HTTPHEADER, ["Authorization: Bearer $this->bToken"]);
+        }
     }
 
     /**
@@ -94,7 +107,7 @@ class TwitterApiRequest
      * @access protected
      * @return string resultado de la petición
      */
-    public function request()
+    public function sendRequest()
     {
         $result = curl_exec($this->handle);
         return $result;

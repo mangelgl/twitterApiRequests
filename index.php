@@ -1,22 +1,12 @@
 <?php
 
 require_once 'apiRequest.php';
-/* 
-$curl = new TwitterApiRequest();
-$url = "https://api.twitter.com/2/users/by?usernames={$user}";
-$metodo = "GET";
-$curl->setArrayOptions($url, $metodo);
-$salida = $curl->request();
 
-$fichero = fopen("salida_api.json", "w");
-fwrite($fichero, $salida);
-fclose($fichero);
- */
 function request($url, $metodo = "GET")
 {
     $curl = new TwitterApiRequest();
     $curl->setArrayOptions($url, $metodo);
-    return $curl->request();
+    return $curl->sendRequest();
 }
 
 
@@ -33,8 +23,16 @@ function getUserID($user)
 function getUserTweets($user)
 {
     //$userID = getUserID($user);
-    $url = "https://api.twitter.com/2/tweets/search/recent?query={$user}";
+    $url = "https://api.twitter.com/2/tweets/search/recent?query=from:{$user}";
     $userData = request($url);
+    guardarSalida($userData);
+    return $userData;
+}
+
+function postTweet($text)
+{
+    $url = "https://api.twitter.com/2/tweets?text={$text}";
+    $userData = request($url, "POST");
     guardarSalida($userData);
     return $userData;
 }
@@ -46,4 +44,5 @@ function guardarSalida($salida)
     fclose($fichero);
 }
 
-echo getUserTweets("mangelgl2") . "\n";
+getUserTweets("mangelgl2");
+//postTweet("Hello World! Tweet send from PHP script");
