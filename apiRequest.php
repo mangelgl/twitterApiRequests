@@ -1,5 +1,7 @@
 <?php
 
+use TwitterApiRequest as GlobalTwitterApiRequest;
+
 include 'config/config.php';
 
 /**
@@ -7,7 +9,7 @@ include 'config/config.php';
  * @author Miguel Ángel García López
  * @version 1.0
  */
-class TwitterApiRequest
+class TwitterApiRequests
 {
 
     /**
@@ -15,49 +17,49 @@ class TwitterApiRequest
      * @var object
      * @access private
      */
-    private $handle;
+    protected $handle;
 
     /**
      * curl options
      * @var array
      * @access private
      */
-    private $optionsArray = [];
+    protected $optionsArray = [];
 
     /**
      * Enlace para la consulta a la API
      * @var string
      * @access protected
      */
-    protected $url;
+    public $url;
 
     /**
      * Método de petición HTTP
      * @var string
      * @access protected
      */
-    protected $method;
+    public $metodo;
 
     /**
      * Bearer token
      * @var string
      * @access private
      */
-    private $bToken = "";
+    private $bToken;
+
     /**
-     * Constructor de la clase, inicializa la sesión cURL
+     * Class constructor
      */
     function __construct()
     {
-        $this->initSession();
-        $this->optionsArray = [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 30,
-        ];
+        // Inicia la sesión cURL
+        $this->handle = $this->initSession();
+        // Inicializa las keys
+        $this->setAuth();
     }
 
     /**
-     * Destructor de la clase, finaliza la sesión cURL
+     * Class destructor
      */
     function __destruct()
     {
@@ -66,53 +68,63 @@ class TwitterApiRequest
 
     /**
      * Inicia la sesión cURL
+     * @return CurlHandle
      */
     private function initSession()
     {
-        $this->handle = curl_init();
+        return curl_init();
     }
 
     /**
      * Configura múltiples opciones para una transferencia cURL
-     * @param $url API url endpoint
-     * @param $method método HTTP
      */
-    public function setArrayOptions($url, $method)
+    private function setCurlOptions()
     {
-        $this->url = $url;
-        $this->method = $method;
-        curl_setopt($this->handle, CURLOPT_URL, $url);
-        $this->setMethod($method);
+
+        $this->optionsArray = [
+            CURLOPT_CONNECTTIMEOUT => 30, // The number of seconds to wait while trying to connect
+            CURLOPT_MAXCONNECTS => 2, // The maximum amount of persistent connections that are allowed
+            CURLOPT_FOLLOWLOCATION => true, // Follows any Location: that the server sends as part of the HTTP Header
+            CURLOPT_RETURNTRANSFER => true, // Return the transfer as a string of the return value
+            CURLOPT_TIMEOUT => 30, // The maximum number of seconds to allow cURL functions to execute.
+            CURLOPT_URL => $this->url,
+        ];
         curl_setopt_array($this->handle, $this->optionsArray);
     }
 
     /**
-     * Establece el tipo de método para la petición HTTP a la API
-     * @param $method método HTTP
-     * @access private
+     * Establece la dirección al endpoint al que realizar la petición
+     * @param string url del endpoint al que realizar la petición
      */
-    private function setMethod($method)
+    public function setApiEndpoint(string $url)
     {
-        if ($method == "POST") {
-            curl_setopt($this->handle, CURLOPT_POST, true);
-            curl_setopt($this->handle, CURLOPT_HTTPHEADER, ["Authorization: Bearer $this->bToken"]);
-        } else if ($method == "GET") {
-            curl_setopt($this->handle, CURLOPT_CUSTOMREQUEST, "GET");
-            curl_setopt($this->handle, CURLOPT_HTTPHEADER, ["Authorization: Bearer $this->bToken"]);
-        }
+        $this->url = $url;
+    }
+
+    /**
+     * Obtiene las keys necesarias y las configura para la transferencia cURL 
+     */
+    private function setAuth()
+    {
+        global $bearerToken;
+        $this->bToken = $bearerToken;
+        curl_setopt($this->handle, CURLOPT_HTTPHEADER, ["Authorization: Bearer $this->bToken"]);
     }
 
     /**
      * Realiza la petición a la API
      * @access protected
-     * @return string resultado de la petición
+     * @return string|boolean resultado de la petición o false en caso de fallo
      */
     public function sendRequest()
     {
-        $result = curl_exec($this->handle);
-        return $result;
+        $this->setCurlOptions();
+        return curl_exec($this->handle);
     }
 
+    /**
+     * Finaliza la sesión cURL
+     */
     private function endSession()
     {
         curl_close($this->handle);
